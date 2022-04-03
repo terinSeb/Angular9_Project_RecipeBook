@@ -20,9 +20,14 @@ export class RecipeService {
       [new Ingredients('Jam', 1), new Ingredients('Milk', 2)]
     ),
   ];
+  // private recipes: recipe[] = [];
   constructor(private slService: ShoppingService) {}
   getRecipes() {
     return this.recipes.slice();
+  }
+  setRecepies(recipe: recipe[]) {
+    this.recipes = recipe;
+    this.recipeChanged.next(this.recipes.slice());
   }
   getRecipe(index: number) {
     return this.recipes[index];
