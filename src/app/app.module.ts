@@ -17,6 +17,7 @@ import { RecipeEditComponent } from './recipes/recipe-edit/recipe-edit.component
 import { RecipeService } from './recipes/recipe.service';
 import { HttpClientModule } from '@angular/common/http';
 import { AuthComponent } from './auth/auth.component';
+import { LoadingSpinnerComponenet } from './shared/loading-spinner/loading-spinner';
 @NgModule({
   declarations: [
     AppComponent,
@@ -31,6 +32,7 @@ import { AuthComponent } from './auth/auth.component';
     RecipeStartComponent,
     RecipeEditComponent,
     AuthComponent,
+    LoadingSpinnerComponenet,
   ],
   imports: [
     BrowserModule,
