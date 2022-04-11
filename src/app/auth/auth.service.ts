@@ -1,7 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Subject, throwError } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
+import { user } from './user.modal';
 
 export interface AuthResponseData {
   idToken: string;
@@ -14,12 +15,14 @@ export interface AuthResponseData {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  user = new Subject<user>();
+
   constructor(private http: HttpClient) {}
   // Below Code for Creating a New User
   signUp(email: string, password: string) {
     return this.http
       .post<AuthResponseData>(
-        'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=',
+        'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAUf4ts2SZjNAAHram6VJLVleVd8zsx7MA',
         {
           email: email,
           password: password,
@@ -27,16 +30,14 @@ export class AuthService {
         }
       )
       .pipe(
-        catchError((errResp) => {
-          let errorMsg = 'An unknown error Occured';
-          if (!errResp.error || !errResp.error.error) {
-            return throwError(errorMsg);
-          }
-          switch (errResp.error.error.message) {
-            case 'EMAIL_EXISTS':
-              errorMsg = 'This Email already exists';
-          }
-          return throwError(errorMsg);
+        catchError(this.handleError),
+        tap((respData) => {
+          this.handleAuthentication(
+            respData.email,
+            respData.localId,
+            respData.idToken,
+            +respData.expiresIn
+          );
         })
       );
   }
@@ -44,7 +45,7 @@ export class AuthService {
   login(email: string, password: string) {
     return this.http
       .post<AuthResponseData>(
-        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=',
+        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyAUf4ts2SZjNAAHram6VJLVleVd8zsx7MA',
         {
           email: email,
           password: password,
@@ -52,17 +53,48 @@ export class AuthService {
         }
       )
       .pipe(
-        catchError((errResp) => {
-          let errorMsg = 'An unknown error Occured';
-          if (!errResp.error || !errResp.error.error) {
-            return throwError(errorMsg);
-          }
-          switch (errResp.error.error.message) {
-            case 'EMAIL_EXISTS':
-              errorMsg = 'This Email already exists';
-          }
-          return throwError(errorMsg);
+        catchError(this.handleError),
+        tap((respData) => {
+          this.handleAuthentication(
+            respData.email,
+            respData.localId,
+            respData.idToken,
+            +respData.expiresIn
+          );
         })
       );
+  }
+  private handleAuthentication(
+    email: string,
+    localId: string,
+    idToken: string,
+    expiresIn: number
+  ) {
+    const expirationDate = new Date(new Date().getTime() + +expiresIn * 1000);
+    const user_ = new user(email, localId, idToken, expirationDate);
+    this.user.next(user_);
+  }
+  private handleError(errorResp: HttpErrorResponse) {
+    let errorMsg = 'An unknown error Occured';
+    if (!errorResp.error || !errorResp.error.error) {
+      return throwError(errorMsg);
+    }
+    switch (errorResp.error.error.message) {
+      case 'EMAIL_EXISTS':
+        errorMsg = 'This Email already exists';
+        break;
+      case 'EMAIL_NOT_FOUND':
+        errorMsg =
+          'There is no user record corresponding to this identifier. The user may have been deleted.';
+        break;
+      case 'INVALID_PASSWORD':
+        errorMsg =
+          'The password is invalid or the user does not have a password.';
+        break;
+      case 'USER_DISABLED':
+        errorMsg = 'The user account has been disabled by an administrator.';
+        break;
+    }
+    return throwError(errorMsg);
   }
 }
