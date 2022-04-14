@@ -1,11 +1,17 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { recipe } from '../recipes/recipe.model';
 import { RecipeService } from '../recipes/recipe.service';
-import { map, retry, tap } from 'rxjs/operators';
+import { exhaustMap, map, retry, take, tap } from 'rxjs/operators';
+import { AuthService } from '../auth/auth.service';
+import { pipe } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class DataStorageService {
-  constructor(private http: HttpClient, private recipeService: RecipeService) {}
+  constructor(
+    private http: HttpClient,
+    private recipeService: RecipeService,
+    private authServ: AuthService
+  ) {}
   storeRecipes() {
     const recipes = this.recipeService.getRecipes();
     return this.http
@@ -18,23 +24,29 @@ export class DataStorageService {
       });
   }
   fetchRecipes() {
-    return this.http
-      .get<recipe[]>(
-        'https://ng-course-recipe-book-d76a1-default-rtdb.firebaseio.com/recipes.json'
-      )
-      .pipe(
-        map((recipes) => {
-          return recipes.map((recipe) => {
-            return {
-              ...recipe,
-              ingredients: recipe.ingredients ? recipe.ingredients : [],
-            };
-          });
-        }),
-        tap((recipe) => {
-          this.recipeService.setRecepies(recipe);
-        })
-      );
+    return this.authServ.user.pipe(
+      take(1),
+      exhaustMap((user) => {
+        return this.http.get<recipe[]>(
+          'https://ng-course-recipe-book-d76a1-default-rtdb.firebaseio.com/recipes.json',
+          {
+            params: new HttpParams().set('auth', user.token),
+          }
+        );
+      }),
+      map((recipes) => {
+        return recipes.map((recipe) => {
+          return {
+            ...recipe,
+            ingredients: recipe.ingredients ? recipe.ingredients : [],
+          };
+        });
+      }),
+      tap((recipe) => {
+        this.recipeService.setRecepies(recipe);
+      })
+    );
+
     // .subscribe((response) => {
     //   this.recipeService.setRecepies(response);
     // });
