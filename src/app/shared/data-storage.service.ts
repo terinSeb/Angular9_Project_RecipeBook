@@ -24,28 +24,23 @@ export class DataStorageService {
       });
   }
   fetchRecipes() {
-    return this.authServ.user.pipe(
-      take(1),
-      exhaustMap((user) => {
-        return this.http.get<recipe[]>(
-          'https://ng-course-recipe-book-d76a1-default-rtdb.firebaseio.com/recipes.json',
-          {
-            params: new HttpParams().set('auth', user.token),
-          }
-        );
-      }),
-      map((recipes) => {
-        return recipes.map((recipe) => {
-          return {
-            ...recipe,
-            ingredients: recipe.ingredients ? recipe.ingredients : [],
-          };
-        });
-      }),
-      tap((recipe) => {
-        this.recipeService.setRecepies(recipe);
-      })
-    );
+    return this.http
+      .get<recipe[]>(
+        'https://ng-course-recipe-book-d76a1-default-rtdb.firebaseio.com/recipes.json'
+      )
+      .pipe(
+        map((recipes) => {
+          return recipes.map((recipe) => {
+            return {
+              ...recipe,
+              ingredients: recipe.ingredients ? recipe.ingredients : [],
+            };
+          });
+        }),
+        tap((recipe) => {
+          this.recipeService.setRecepies(recipe);
+        })
+      );
 
     // .subscribe((response) => {
     //   this.recipeService.setRecepies(response);

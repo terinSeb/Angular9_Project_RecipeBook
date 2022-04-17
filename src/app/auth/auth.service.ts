@@ -1,5 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { throwError, BehaviorSubject } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { user } from './user.modal';
@@ -18,12 +19,12 @@ export class AuthService {
   // user = new Subject<user>();
   user = new BehaviorSubject<user>(null);
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private router: Router) {}
   // Below Code for Creating a New User
   signUp(email: string, password: string) {
     return this.http
       .post<AuthResponseData>(
-        'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=',
+        'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAUf4ts2SZjNAAHram6VJLVleVd8zsx7MA',
         {
           email: email,
           password: password,
@@ -46,7 +47,7 @@ export class AuthService {
   login(email: string, password: string) {
     return this.http
       .post<AuthResponseData>(
-        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=',
+        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyAUf4ts2SZjNAAHram6VJLVleVd8zsx7MA',
         {
           email: email,
           password: password,
@@ -64,6 +65,10 @@ export class AuthService {
           );
         })
       );
+  }
+  logOut() {
+    this.user.next(null);
+    this.router.navigate(['./auth']);
   }
   private handleAuthentication(
     email: string,
